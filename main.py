@@ -1,7 +1,4 @@
 import cv2
-import datetime
-from PIL import ImageFont, ImageDraw, Image
-import numpy as np
 import sys
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -10,8 +7,9 @@ from PyQt5.QtWidgets import *
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 
-class ShowVideo(QtCore.QObject):
+from random import *
 
+class ShowVideo(QtCore.QObject):
     flag = 0
 
     camera = cv2.VideoCapture(0)
@@ -28,6 +26,9 @@ class ShowVideo(QtCore.QObject):
     @QtCore.pyqtSlot()
     def startVideo(self):
         global image
+        global started
+
+        started = True
 
         self.run_video = True
         while self.run_video:
@@ -47,8 +48,21 @@ class ShowVideo(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def savePicture(self):
-        filename = './capture.png'
-        self.qt_image.save(filename)
+        global started
+        global input_sick
+        global result
+        global input_sick_str
+        global result_str
+
+        if started:
+            filename = './capture.png'
+            self.qt_image.save(filename)
+
+            string = "100+200"
+            res = "300"
+
+            input_sick.setText(input_sick_str + string)
+            result.setText(result_str + res)
         
 class ImageViewer(QtWidgets.QWidget):
     def __init__(self, parent=None):
@@ -73,7 +87,11 @@ class ImageViewer(QtWidgets.QWidget):
         if image.size() != self.size():
             self.setFixedSize(image.size())
         self.update()
-        
+
+started = False
+input_sick_str = "Formula : "
+result_str = "Result : "
+
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     
@@ -89,8 +107,8 @@ if __name__ == '__main__':
     push_button1 = QtWidgets.QPushButton('Start')
     push_button2 = QtWidgets.QPushButton('Capture')
     blank = QtWidgets.QLabel(' ')
-    input_sick = QtWidgets.QLabel('식:')
-    result = QtWidgets.QLabel('결과값')
+    input_sick = QtWidgets.QLabel(input_sick_str)
+    result = QtWidgets.QLabel(result_str)
     input_sick.setAlignment(Qt.AlignCenter)
     result.setAlignment(Qt.AlignCenter)
     
