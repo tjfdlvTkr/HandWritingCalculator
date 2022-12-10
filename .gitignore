@@ -3,5 +3,5 @@
 /_testdata
 /__pycache__
 
-digits_for_ocr.npz
+ocr_model.npz
 test.png
