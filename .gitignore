@@ -1,0 +1,7 @@
+# Digits Data
+/_data
+/_testdata
+/__pycache__
+
+digits_for_ocr.npz
+test.png
