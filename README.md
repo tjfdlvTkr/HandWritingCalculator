@@ -22,8 +22,11 @@ pip install numpy
 2. Save the picture from your webcam with the Capture button.
 3. Calculate the formula with the Calculate button.
 
-<img src="https://github.com/tjfdlvTkr/HandWritingCalculator/blob/main/README_img/img1.png" align="left">
-<img src="https://github.com/tjfdlvTkr/HandWritingCalculator/blob/main/README_img/img2.png" align="left">
+<span>
+  <img src="https://github.com/tjfdlvTKr/HandWritingCalculator/blob/main/README_img/img1.png" width="350" align="left"/>
+  <img src="https://github.com/tjfdlvTkr/HandWritingCalculator/blob/main/README_img/img2.png" width="350"/>
+</span>  
+<p></p>
 
 ### References
 * [머신러닝 기초2 - kNN을 이용하여 손글씨 인식하기](https://blog.naver.com/samsjang/220684292757)
