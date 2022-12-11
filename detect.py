@@ -3,14 +3,16 @@ import digit_study as distu
 
 def detFormula(fname):
     img = cv2.imread(fname)
+
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    
 
-    ret, thresh1 = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
-    rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (18, 18))
-
-    dilation = cv2.dilate(thresh1, rect_kernel, iterations = 1)
-    contours, hierarchy = cv2.findContours(dilation, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-
+    thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)[1]
+    rect_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (1, 1))
+    thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, rect_kernel)
+    dilation = cv2.dilate(thresh, rect_kernel, iterations = 1)
+    contours, _ = cv2.findContours(dilation, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+ 
     im2 = img.copy()
     width = 80
 
@@ -40,14 +42,14 @@ def detFormula(fname):
     string = ""
 
     for x, y, w, h in digit_list:
-        cropped = im2[y:y + h, x:x + w]
-        
-        cutimg = distu.resizeImg(cropped, width)
+        if w > 5 and h > 5:
+            cropped = im2[y:y + h, x:x + w]
+            cutimg = distu.resizeImg(cropped, width)
 
-        result = int(distu.ocrchar(cutimg, traindata, traindata_labels)[0][0])
-        string += str(result)
+            result = int(distu.ocrchar(cutimg, traindata, traindata_labels)[0][0])
+            string += str(result)
 
-        rect = cv2.rectangle(im2, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            rect = cv2.rectangle(im2, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
     cv2.imwrite('_log/recg.png', im2)
     return string
