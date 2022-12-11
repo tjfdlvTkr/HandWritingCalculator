@@ -5,3 +5,7 @@
 
 ocr_model.npz
 test.png
+
+# Log
+_log/capture.png
+_log/recg.png

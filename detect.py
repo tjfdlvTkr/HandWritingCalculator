@@ -1,126 +1,58 @@
-import numpy as np
 import cv2
 import digit_study as distu
-from formula import strcar
- 
-def x_cord_contour(contour):
-    # This function take a contour from findContours
-    # it then outputs the x centroid coordinates
+
+def detFormula(fname):
+    img = cv2.imread(fname)
+
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
 
-    M = cv2.moments(contour)
-    return (int(M['m10']/M['m00']))
+    thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)[1]
+    rect_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (1, 1))
+    thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, rect_kernel)
+    dilation = cv2.dilate(thresh, rect_kernel, iterations = 1)
+    contours, _ = cv2.findContours(dilation, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
  
- 
-def makeSquare(not_square):
-    # This function takes an image and makes the dimenions square
-    # It adds black pixels as the padding where needed
-    
-    BLACK = [0,0,0]
-    img_dim = not_square.shape
-    height = img_dim[0]
-    width = img_dim[1]
-    #print("Height = ", height, "Width = ", width)
-    if (height == width):
-        square = not_square
-        return square
-    else:
-        doublesize = cv2.resize(not_square,(2*width, 2*height), interpolation = cv2.INTER_CUBIC)
-        height = height * 2
-        width = width * 2
-        #print("New Height = ", height, "New Width = ", width)
-        if (height > width):
-            pad = int((height - width)/2)
-            #print("Padding = ", pad)
-            doublesize_square = cv2.copyMakeBorder(doublesize,0,0,pad,pad,cv2.BORDER_CONSTANT,value=BLACK)
-        else:
-            pad = int((width - height)/2)
-            #print("Padding = ", pad)
-            doublesize_square = cv2.copyMakeBorder(doublesize,pad,pad,0,0,cv2.BORDER_CONSTANT,value=BLACK)
-    doublesize_square_dim = doublesize_square.shape
-    #print("Sq Height = ", doublesize_square_dim[0], "Sq Width = ", doublesize_square_dim[1])
-    return doublesize_square
- 
- 
-def resize_to_pixel(dimensions, image):
-    # This function then re-sizes an image to the specificied dimenions
-    
-    buffer_pix = 4
-    dimensions  = dimensions - buffer_pix
-    squared = image
-    r = float(dimensions) / squared.shape[1]
-    dim = (dimensions, int(squared.shape[0] * r))
-    resized = cv2.resize(image, dim, interpolation = cv2.INTER_AREA)
-    img_dim2 = resized.shape
-    height_r = img_dim2[0]
-    width_r = img_dim2[1]
-    BLACK = [0,0,0]
-    if (height_r > width_r):
-        resized = cv2.copyMakeBorder(resized,0,0,0,1,cv2.BORDER_CONSTANT,value=BLACK)
-    if (height_r < width_r):
-        resized = cv2.copyMakeBorder(resized,1,0,0,0,cv2.BORDER_CONSTANT,value=BLACK)
-    p = 2
-    ReSizedImg = cv2.copyMakeBorder(resized,p,p,p,p,cv2.BORDER_CONSTANT,value=BLACK)
-    img_dim = ReSizedImg.shape
-    height = img_dim[0]
-    width = img_dim[1]
-    #print("Padded Height = ", height, "Width = ", width)
-    return ReSizedImg
- 
-image = cv2.imread('test.png')
-gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
- 
-# Blur image then find edges using Canny 
-blurred = cv2.GaussianBlur(gray, (5, 5), 0)
- 
-edged = cv2.Canny(blurred, 30, 150)
- 
-# Fint Contours
-contours, _ = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
- 
-#Sort out contours left to right by using their x cordinates
-filtered_contours = [c for c in contours if cv2.contourArea(c) > 10]
-contours = sorted(filtered_contours, key = x_cord_contour, reverse = False)
-# Create empty array to store entire number
-full_number = []
- 
-string = ""
+    im2 = img.copy()
+    width = 80
 
-# loop over the contours
-for c in contours:
-    # compute the bounding box for the rectangle
-    (x, y, w, h) = cv2.boundingRect(c)  
-    
-    #cv2.drawContours(image, contours, -1, (0,255,0), 3)
-    #cv2.imshow("Contours", image)
- 
-    if w >= 5 and h >= 25:
-        roi = blurred[y:y + h, x:x + w]
-        ret, roi = cv2.threshold(roi, 127, 255,cv2.THRESH_BINARY_INV)
-        squared = makeSquare(roi)
-        final = resize_to_pixel(20, squared)
-        final_array = final.reshape((1,400))
-        final_array = final_array.astype(np.float32)
-        #ret, result, neighbours, dist = knn.findNearest(final_array, k=1)
-        #number = str(int(float(result[0])))
-        #full_number.append(number)
-        # draw a rectangle around the digit, the show what the
-        # digit was classified as
+    ocrdata = 'ocr_model.npz'
+    traindata, traindata_labels = distu.loadModel(ocrdata)
+
+    digit_list = []
+
+    for c in contours:
+        (x, y, w, h) = cv2.boundingRect(c) 
+        digit_list.append([x, y, w, h])
+
+
+    for i in range(len(digit_list) - 1):
+        min = i
+        for j in range(i+1, len(digit_list)):
+            mx, my, mw, mh = digit_list[min]
+            jx, jy, jw, jh = digit_list[j]
+
+            if (jy+jh < my):
+                min = j
+            elif (jx < mx) and ((my in range(jy, jy+jh+1)) or (my+mh in range(jy, jy+jh+1)) or (jy in range(my, my+mh+1)) or (jy+jh in range(my, my+mh+1))):
+                min = j
         
-        dec = distu.detDigits(image, x, y, w, h)
+        digit_list[min], digit_list[i] = digit_list[i], digit_list[min]
 
-        print(x, y, w, h, end = ' ') 
-        print('Value :', dec)
+    string = ""
 
-        string += str(dec)
+    for x, y, w, h in digit_list:
+        if w > 5 and h > 5:
+            cropped = im2[y:y + h, x:x + w]
+            cutimg = distu.resizeImg(cropped, width)
 
-        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 0, 255), 2)
-        cv2.imshow("image", image)
-        cv2.waitKey(0)
-        #cv2.putText(image, number, (x , y + 155),
-        #    cv2.FONT_HERSHEY_COMPLEX, 2, (255, 0, 0), 2)
+            result = int(distu.ocrchar(cutimg, traindata, traindata_labels)[0][0])
+            string += str(result)
 
-cv2.destroyAllWindows()
+            rect = cv2.rectangle(im2, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-print(string)
-print(strcar(string))
+    cv2.imwrite('_log/recg.png', im2)
+    return string
+
+
+#print(detFormula('test.png'))

@@ -1,134 +1,96 @@
+from tkinter import *
 import cv2
-import sys
-from PyQt5 import QtCore
-from PyQt5 import QtWidgets
-from PyQt5 import QtGui
-from PyQt5.QtWidgets import *
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
+from PIL import Image, ImageTk
 
-from random import *
+from detect import *
+from formula import *
 
-class ShowVideo(QtCore.QObject):
-    flag = 0
+window = Tk()
+window.title("Handwriting Recognition Calculator")
+window.geometry("800x680")
 
-    camera = cv2.VideoCapture(0)
+def exit_window():
+    window.destroy()
 
-    ret, image = camera.read()
-    height, width = image.shape[:2]
+blank_label = Label(window, height=1)
+blank_label.pack()
 
-    VideoSignal1 = QtCore.pyqtSignal(QtGui.QImage)
-    VideoSignal2 = QtCore.pyqtSignal(QtGui.QImage)
+# Create a Label to capture the Video frames
+label = Label(window)
+label.pack()
+cap= cv2.VideoCapture(0)
 
-    def __init__(self, parent=None):
-        super(ShowVideo, self).__init__(parent)
+w = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-    @QtCore.pyqtSlot()
-    def startVideo(self):
-        global image
-        global started
+# Define function to show frame
+def show_frames():
+    global orig_image
+    # Get the latest frame and convert into Image
+    orig_image= cap.read()[1]
+    cv2image = cv2.cvtColor(orig_image, cv2.COLOR_BGR2RGB)
+    img = Image.fromarray(cv2image)
+    # Convert image to PhotoImage
+    imgtk = ImageTk.PhotoImage(image = img)
+    label.imgtk = imgtk
+    label.configure(image=imgtk)
 
-        started = True
+    # Repeat after an interval to capture continiously
+    label.after(50, show_frames)
 
-        self.run_video = True
-        while self.run_video:
-            ret, image = self.camera.read()
-            color_swapped_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+show_frames()
 
-            self.qt_image = QtGui.QImage(color_swapped_image.data,
-                                    self.width,
-                                    self.height,
-                                    color_swapped_image.strides[0],
-                                    QtGui.QImage.Format_RGB888)
-            self.VideoSignal1.emit(self.qt_image)
+label_for_p = Label(window, width=70, height=10)
+label_for_p.pack()
 
-            loop = QtCore.QEventLoop()
-            QtCore.QTimer.singleShot(25, loop.quit) #25 ms
-            loop.exec_()
+label_for = Label(label_for_p, text="Formula : ", font=('나눔고딕', 16))
+label_for.pack(side="left")
 
-    @QtCore.pyqtSlot()
-    def savePicture(self):
-        global started
-        global input_sick
-        global result
-        global input_sick_str
-        global result_str
+ent_for = Entry(label_for_p, font=('나눔고딕',16),bg='white',width=40)
+ent_for.pack(side="left")
 
-        if started:
-            filename = './capture.png'
-            self.qt_image.save(filename)
+string = ""
 
-            string = "100+200"
-            res = "300"
+def captureImg():
+    global ent_for
+    global string
 
-            input_sick.setText(input_sick_str + string)
-            result.setText(result_str + res)
-        
-class ImageViewer(QtWidgets.QWidget):
-    def __init__(self, parent=None):
-        super(ImageViewer, self).__init__(parent)
-        self.image = QtGui.QImage()
-        self.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
+    fname = '_log/capture.png'
+    cv2.imwrite(fname, orig_image)
+    ent_for.delete(0,"end")
 
-    def paintEvent(self, event):
-        painter = QtGui.QPainter(self)
-        painter.drawImage(0, 0, self.image)
-        self.image = QtGui.QImage()
+    string = detFormula(fname)
+    ent_for.insert(0, string)
 
-    def initUI(self):
-        self.setWindowTitle('Test')
+label_for_ui = Label(window, width=80, height=10)
+label_for_ui.pack()
 
-    @QtCore.pyqtSlot(QtGui. QImage)
-    def setImage(self, image):
-        if image.isNull():
-            print("Viewer Dropped frame!")
+button_cap = Button(label_for_ui,text="Capture",font=('나눔고딕',16,'bold'),width=8,command=captureImg)
+button_cap.pack(side="left")
 
-        self.image = image
-        if image.size() != self.size():
-            self.setFixedSize(image.size())
-        self.update()
+label_for_ui_for_blank1 = Label(label_for_ui, width=2)
+label_for_ui_for_blank1.pack(side="left")
 
-started = False
-input_sick_str = "Formula : "
-result_str = "Result : "
+def calcAnswer():
+    global label_for_resultString
+    global string
+    global ent_for
 
-if __name__ == '__main__':
-    app = QtWidgets.QApplication(sys.argv)
-    
-    thread = QtCore.QThread()
-    thread.start()
-    vid = ShowVideo()
-    vid.moveToThread(thread)
+    string = ent_for.get()
+    label_for_resultString.config(text=str(strcar(string)))
 
-    image_viewer1 = ImageViewer()
+button_cal = Button(label_for_ui,text="Calculate",font=('나눔고딕',16,'bold'),width=8,command=calcAnswer)
+button_cal.pack(side="left")
 
-    vid.VideoSignal1.connect(image_viewer1.setImage)
 
-    push_button1 = QtWidgets.QPushButton('Start')
-    push_button2 = QtWidgets.QPushButton('Capture')
-    blank = QtWidgets.QLabel(' ')
-    input_sick = QtWidgets.QLabel(input_sick_str)
-    result = QtWidgets.QLabel(result_str)
-    input_sick.setAlignment(Qt.AlignCenter)
-    result.setAlignment(Qt.AlignCenter)
-    
-    push_button1.clicked.connect(vid.startVideo)
-    push_button2.clicked.connect(vid.savePicture)
+label_for_result = Label(window, text="- Result -", font=('나눔고딕', 16))
+label_for_result.pack()
 
-    vertical_layout = QtWidgets.QVBoxLayout()
-    horizontal_layout = QtWidgets.QHBoxLayout()
-    horizontal_layout.addWidget(image_viewer1)
-    vertical_layout.addLayout(horizontal_layout)
-    vertical_layout.addWidget(push_button1)
-    vertical_layout.addWidget(push_button2)
-    vertical_layout.addWidget(blank)
-    vertical_layout.addWidget(input_sick)
-    vertical_layout.addWidget(result)
+label_for_resultString = Label(window, text="", font=('나눔고딕', 16))
+label_for_resultString.pack()
 
-    layout_widget = QtWidgets.QWidget()
-    layout_widget.setLayout(vertical_layout)
+window.protocol('WM_DELETE_WINDOW', exit_window)
 
-    main_window = QtWidgets.QMainWindow()
-    main_window.setCentralWidget(layout_widget)
-    main_window.show()
-    sys.exit(app.exec_())
+window.mainloop()
