@@ -3,9 +3,9 @@
 /_testdata
 /__pycache__
 
-ocr_model.npz
 test.png
 
 # Log
 _log/capture.png
 _log/recg.png
+_log/dig.png
