@@ -1,6 +1,12 @@
 import cv2
 import numpy as np
 
+str_dic = {
+    0:'0', 1:'1', 2:'2', 3:'3', 4:'4', 5:'5', 6:'6',
+    7:'7', 8:'8', 9:'9', 10:'+', 11:'-', 12:'*', 13:'/',
+    14:'%', 15:'(', 16:')'
+}
+
 def learningDigit(char_num, ocrdata, width):
     image = cv2.imread('_data/digits.png')
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -29,16 +35,18 @@ def resizeImg(test_img, width):
     ret = cv2.resize(gray, (width, width), fx=1, fy=1, interpolation=cv2.INTER_AREA)
 
     ret, thr = cv2.threshold(ret, 127, 255, cv2.THRESH_BINARY_INV)
-    #cv2.imshow('ret', thr)
+    cv2.imshow('ret',thr)
     return thr.reshape(-1, width ** 2).astype(np.float32)
 
 def ocrchar(img, traindata, traindata_labels):
+    global str_dic
+
     knn = cv2.ml.KNearest_create()
     knn.train(traindata, cv2.ml.ROW_SAMPLE, traindata_labels)
     ret, result, neighbors, dist = knn.findNearest(img, k=5)
-    #print(ret, result, neighbors, dist)
+    print(ret, result, neighbors, dist)
     
-    return result
+    return str_dic[int(result[0][0])]
 
 def imglearn(test_img_rs, k, traindata, traindata_labels):
     traindata = np.append(traindata, test_img_rs, axis=0)
@@ -46,14 +54,14 @@ def imglearn(test_img_rs, k, traindata, traindata_labels):
     traindata_labels = np.append(traindata_labels, new_label, axis=0)
     return traindata, traindata_labels
 
-# ocrdata = 'ocr_model.npz'
-def main(ocrdata):
+def main():
     global Mode
 
     testdata_num = 10
 
     char_num = 10
     
+    ocrdata = 'ocr_model.npz'
     width = 80
 
     if Mode == 1: learningDigit(char_num, ocrdata, width)
