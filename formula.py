@@ -6,7 +6,7 @@ def strcar(string):
     try:
         # Check the entire string. ( using ch )
         for ch in string:  
-            if ch in ['+', '-', '*', '/', '%', '(', ')']: # Operator
+            if ch in ['+', '-', '*', '/' '(', ')']: # Operator
                 if now_num != -1: # Append the number in stack
                     stack.append(now_num)
                     now_num = -1
@@ -28,11 +28,10 @@ def strcar(string):
                             elif stack[-1] == '-': now_result = stack[-2] - now_result
                             elif stack[-1] == '*': now_result = stack[-2] * now_result
                             elif stack[-1] == '/': now_result = int(stack[-2] // now_result)
-                            elif stack[-1] == '%': now_result = stack[-2] % now_result
 
                             for _ in range(2): stack.pop() 
                                            
-                else: # +, -, *, /, %, (
+                else: # +, -, *, /, (
                     stack.append(ch)
             
             else: # Stack number
@@ -46,13 +45,11 @@ def strcar(string):
         # Calculate Preferred Operators First
         idx = 0
         while idx < len(stack):
-            if stack[idx] in ['*', '/', '%']:
+            if stack[idx] in ['*', '/']:
                 if stack[idx] == '*':
                     stack[idx - 1] = stack[idx - 1] * stack[idx + 1]
                 elif stack[idx] == '/':
                     stack[idx - 1] = int(stack[idx - 1] // stack[idx + 1])
-                elif stack[idx] == '%':
-                    stack[idx - 1] = stack[idx - 1] % stack[idx + 1]
 
                 for _ in range(2): del stack[idx]
             else: idx += 1
@@ -65,7 +62,7 @@ def strcar(string):
 
             for _ in range(2): del stack[1]
         
-        if len(stack) == 1 and (stack[0] not in ['+', '-', '*', '/', '%', '(']): return stack[0]
+        if len(stack) == 1 and (stack[0] not in ['+', '-', '*', '/', '(']): return stack[0]
         else: return "Error"
         
     except ZeroDivisionError: return "Zero Division"
