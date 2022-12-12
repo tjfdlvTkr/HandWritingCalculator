@@ -1,11 +1,18 @@
 import cv2
 import numpy as np
 
+from keras_digit import *
+
+str_dic = {
+    0:'0', 1:'1', 2:'2', 3:'3', 4:'4', 5:'5', 6:'6', 7:'7', 
+    8:'8', 9:'9', 10:'(', 11:')', 12:'+', 13:'-', 14:'*', 15:'/'
+}
+
 def learningDigit(char_num, ocrdata, width):
     image = cv2.imread('_data/digits.png')
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    px = 8000
-    py = 4000
+    px = 2000
+    py = 1600
 
     cells = [np.hsplit(row, px // width) for row in np.vsplit(gray, py // width)]
     x = np.array(cells)
@@ -25,36 +32,57 @@ def loadModel(ocrdata):
     return traindata, traindata_labels
 
 def resizeImg(test_img, width):
-    gray = cv2.cvtColor(test_img, cv2.COLOR_BGR2GRAY)
+    try:
+        gray = cv2.cvtColor(test_img, cv2.COLOR_BGR2GRAY)
+    except:
+        gray = test_img
     ret = cv2.resize(gray, (width, width), fx=1, fy=1, interpolation=cv2.INTER_AREA)
 
     ret, thr = cv2.threshold(ret, 127, 255, cv2.THRESH_BINARY_INV)
-    #cv2.imshow('ret', thr)
     return thr.reshape(-1, width ** 2).astype(np.float32)
 
-def ocrchar(img, traindata, traindata_labels):
+def ocrchar(img, orig_img, traindata, traindata_labels):
+    global str_dic
+
     knn = cv2.ml.KNearest_create()
     knn.train(traindata, cv2.ml.ROW_SAMPLE, traindata_labels)
     ret, result, neighbors, dist = knn.findNearest(img, k=5)
     #print(ret, result, neighbors, dist)
-    
-    return result
+
+    if ret <= 9:
+        cv2.imwrite('_log/dig.png', orig_img)
+        return keras_predict()
+    else: 
+        return str_dic[int(result[0][0])]
+
+asc_dic = {
+    48:'0', 49:'1', 50:'2', 51:'3', 52:'4', 53:'5', 54:'6', 55:'7', 
+    56:'8', 57:'9', 81:'(', 87:')', 69:'+', 82:'-', 84:'*', 89:'/'
+}
 
 def imglearn(test_img_rs, k, traindata, traindata_labels):
+    global asc_dic
+    global str_dic
+
+    reverse_dict = dict(map(reversed,str_dic.items()))
+    #print(reverse_dict[asc_dic[k]])
+
     traindata = np.append(traindata, test_img_rs, axis=0)
-    new_label = np.array(int(chr(k))).reshape(-1,1)
+    new_label = np.array(reverse_dict[asc_dic[k]]).reshape(-1,1)
     traindata_labels = np.append(traindata_labels, new_label, axis=0)
     return traindata, traindata_labels
 
-# ocrdata = 'ocr_model.npz'
-def main(ocrdata):
+def main():
     global Mode
+    global asc_dic
+    global str_dic
 
-    testdata_num = 10
+    testdata_num = 16
 
-    char_num = 10
+    char_num = 16
     
-    width = 80
+    ocrdata = 'ocr_model.npz'
+    width = 20
 
     if Mode == 1: learningDigit(char_num, ocrdata, width)
 
@@ -70,7 +98,7 @@ def main(ocrdata):
         #print('Result :', int(result[0][0]))
 
         k = cv2.waitKey(0)
-        if k > 47 and k < 58:
+        if k in list(asc_dic.keys()):
             savevar = True
             for _ in range(5): traindata, traindata_labels = imglearn(test_img_rs, k, traindata, traindata_labels)
     
