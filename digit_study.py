@@ -7,7 +7,12 @@ str_dic = {
     0:'0', 1:'1', 2:'2', 3:'3', 4:'4', 5:'5', 6:'6', 7:'7', 
     8:'8', 9:'9', 10:'(', 11:')', 12:'+', 13:'-', 14:'*', 15:'/'
 }
+asc_dic = {
+    48:'0', 49:'1', 50:'2', 51:'3', 52:'4', 53:'5', 54:'6', 55:'7', 
+    56:'8', 57:'9', 81:'(', 87:')', 69:'+', 82:'-', 84:'*', 89:'/'
+}
 
+# first learning
 def learningDigit(char_num, ocrdata, width):
     image = cv2.imread('_data/digits.png')
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -24,6 +29,7 @@ def learningDigit(char_num, ocrdata, width):
 
     np.savez(ocrdata, train=train, train_labels=train_labels)
 
+# Model load
 def loadModel(ocrdata):
     with np.load(ocrdata) as f:
         traindata = f['train']
@@ -31,6 +37,7 @@ def loadModel(ocrdata):
 
     return traindata, traindata_labels
 
+# Reshape an image into a one-dimensional array
 def resizeImg(test_img, width):
     try:
         gray = cv2.cvtColor(test_img, cv2.COLOR_BGR2GRAY)
@@ -41,6 +48,7 @@ def resizeImg(test_img, width):
     ret, thr = cv2.threshold(ret, 127, 255, cv2.THRESH_BINARY_INV)
     return thr.reshape(-1, width ** 2).astype(np.float32)
 
+# Character discrimination
 def ocrchar(img, orig_img, traindata, traindata_labels):
     global str_dic
 
@@ -55,17 +63,12 @@ def ocrchar(img, orig_img, traindata, traindata_labels):
     else: 
         return str_dic[int(result[0][0])]
 
-asc_dic = {
-    48:'0', 49:'1', 50:'2', 51:'3', 52:'4', 53:'5', 54:'6', 55:'7', 
-    56:'8', 57:'9', 81:'(', 87:')', 69:'+', 82:'-', 84:'*', 89:'/'
-}
-
+# Character learning
 def imglearn(test_img_rs, k, traindata, traindata_labels):
     global asc_dic
     global str_dic
 
     reverse_dict = dict(map(reversed,str_dic.items()))
-    #print(reverse_dict[asc_dic[k]])
 
     traindata = np.append(traindata, test_img_rs, axis=0)
     new_label = np.array(reverse_dict[asc_dic[k]]).reshape(-1,1)
@@ -94,8 +97,6 @@ def main():
         test_img = cv2.imread(char)
         test_img_rs = resizeImg(test_img, width)
         result = ocrchar(test_img_rs, traindata, traindata_labels)
-
-        #print('Result :', int(result[0][0]))
 
         k = cv2.waitKey(0)
         if k in list(asc_dic.keys()):
