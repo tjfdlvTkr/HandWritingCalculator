@@ -19,16 +19,18 @@ def detFormula(fname):
 
     digit_list = []
 
+    # Search Contours
     for c in contours:
         [x, y, w, h] = cv2.boundingRect(c)
 
-        if h < w // 2: # -
+        if h < w // 2: # ' - ' discrimination
             h += 30
             y -= 15
          
         digit_list.append([x, y, w, h])
 
 
+    # Sort Contours
     for i in range(len(digit_list) - 1):
         min = i
         for j in range(i+1, len(digit_list)):
@@ -54,11 +56,13 @@ def detFormula(fname):
             kernel_c = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (1, 1))
             thresh_c = cv2.morphologyEx(thresh_c, cv2.MORPH_OPEN, kernel_c)
 
+            # Base : background photo to reduce size
             base = cv2.imread('base.png', cv2.COLOR_BGR2GRAY)
             base = cv2.resize(base, (width, width), fx=1, fy=1, interpolation=cv2.INTER_AREA)
             base = 255 - base
             hc, wc = cropped.shape[:2]
 
+            # Resize
             crop_done = base[3:hc+3,3:wc+3]
             cv2.copyTo(cropped, thresh_c, crop_done)
 
